@@ -1,0 +1,110 @@
+@startuml
+
+title Projet Resilience
+
+hide circle
+
+class Personne{
+  personne_prenom : text
+  personne_date_naissance : Date
+  personne_adresse : text
+}
+note top: (nom, prenom, date_naissence): {unique}
+
+class Communaute{
+  communaute_description : text
+  communaute_nombre_de_personnes_max : number
+  vote(Personne) : boolean
+}
+note bottom: nombre_de_personnes <= nombre_de_personnes_max
+
+class Lien{
+  lien_description : text
+}
+note top: Les Liens sont toujours unidirectionnels
+
+class SavoirFaire {
+  savoir_faire_nom : text
+  savoir_faire_degre : number between 0 and 5
+}
+note right: (nom, degre) {unique}}
+
+abstract class Service <<abstract>>{
+ service_nom : text
+}
+note right: Pour proposer un service il faut posseder un certain savoir-faire\ndont le degre est superieur ou egal au degre prerequis
+
+class ServiceSansContrePartie{
+}
+
+class ServiceAvecContrePartie{
+
+}
+
+class ServiceAvecContrePartieCommercial{
+  service_contrepartie_montant : number > 0
+}
+
+class ServiceAvecContrePartieDUnAutreService{
+  service_contrepartie_service : Service
+}
+note bottom: contrepartie peut etre NULL si aucune contre partie identifiee
+
+class Message{
+  message_texte : text
+  message_date : Date
+}
+note top: Un message ne peut etre supprime ou modifie\npar quelqu'un d'autre que son expediteur
+
+class Compte{
+  compte_solde : number >= 0
+  compte_cle_publique : text {unique}
+}
+note right: On ne peut depenser l'argent d'un compte que si on en est le proprietaire.\nOn peut crediter de l'argent sur un compte à l'aide de sa cle publique
+
+class CoordonneesGeographique{
+  longitude : number
+  latitude : number
+}
+note bottom : (Longitude, Latitude) {unique}
+
+abstract class UtilisateurLambda <<abstract>>{
+  utilisateur_nom : text
+}
+
+UtilisateurLambda <|-- Personne
+UtilisateurLambda <|-- Communaute
+
+UtilisateurLambda "*" ----- "*" UtilisateurLambda
+(UtilisateurLambda, UtilisateurLambda) . Lien
+
+Personne "*" -- "*" Communaute : > declare fait partie de
+note top on link :  Les Personnes votent pour\nl'exclusion d'une autre\npersonne de la communaute
+
+Communaute "*" -  "*" Personne : > exclue
+
+UtilisateurLambda "*" -- "*" SavoirFaire : > ajoute
+
+UtilisateurLambda "*" ---- "*" Service : > propose
+Service "*" ----- "*" UtilisateurLambda : > recoit
+
+Service "*" -- "*" SavoirFaire : > requiert
+
+Service <|-- ServiceSansContrePartie
+Service <|-- ServiceAvecContrePartie
+ServiceAvecContrePartie <|-- ServiceAvecContrePartieCommercial
+ServiceAvecContrePartie <|-- ServiceAvecContrePartieDUnAutreService
+
+
+UtilisateurLambda "1" - "*" Compte : > possede
+
+UtilisateurLambda "1" -- "1" UtilisateurLambda
+(UtilisateurLambda, UtilisateurLambda) .. Message
+
+Message "1" -- "0..1" Message : > fait reference a
+
+UtilisateurLambda "1" -- "*" Message : > modifie ou supprime
+
+Personne "*" --- "1"  CoordonneesGeographique: > se localise
+
+@enduml
